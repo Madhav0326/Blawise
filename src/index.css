@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 228 60% 98%;
+    --foreground: 228 60% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 228 60% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 228 60% 12%;
+
+    --primary: 235 85% 30%;
+    --primary-foreground: 228 60% 98%;
+
+    --secondary: 240 60% 94%;
+    --secondary-foreground: 228 60% 18%;
+
+    --accent: 243 79% 59%;
+    --accent-foreground: 228 60% 10%;
+
+    --muted: 228 40% 95%;
+    --muted-foreground: 228 25% 50%;
+
+    --destructive: 0 85% 55%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 228 40% 80%;
+    --input: 228 40% 90%;
+    --ring: 235 85% 30%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 228 20% 10%;
+    --foreground: 228 40% 94%;
+
+    --card: 228 20% 14%;
+    --card-foreground: 228 40% 94%;
+
+    --popover: 228 20% 10%;
+    --popover-foreground: 228 40% 94%;
+
+    --primary: 235 85% 65%;
+    --primary-foreground: 228 20% 15%;
+
+    --secondary: 228 20% 18%;
+    --secondary-foreground: 228 40% 95%;
+
+    --accent: 243 79% 59%;
+    --accent-foreground: 228 20% 15%;
+
+    --muted: 228 20% 20%;
+    --muted-foreground: 228 15% 65%;
+
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 228 20% 15%;
+
+    --border: 228 20% 25%;
+    --input: 228 20% 25%;
+    --ring: 235 85% 65%;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  h1, h2, h3, h4, a, strong {
+    color: hsl(var(--foreground));
+  }
+
+  a:hover {
+    color: hsl(var(--accent));
+  }
+
+  button, .btn {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+
+  button:hover, .btn:hover {
+    background-color: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+  }
+
+  .btn-outline {
+    background-color: transparent;
+    border: 2px solid hsl(var(--primary));
+    color: hsl(var(--primary));
+  }
+
+  .btn-outline:hover {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+  .input-style {
+  @apply border rounded px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 w-full;
+  }
+  .input {
+  @apply w-full p-3 border rounded-md focus:outline-none focus:ring focus:border-accent;
+}
+.btn-primary {
+  @apply bg-accent text-white px-6 py-2 rounded-md hover:bg-accent/90 transition;
+}
+.btn-secondary {
+  @apply bg-gray-200 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-300 transition;
+}
+}
