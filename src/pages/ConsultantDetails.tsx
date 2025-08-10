@@ -4,6 +4,8 @@ import { supabase } from "../lib/supabaseClient";
 import BookingModal from "../components/BookingModal";
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { type User } from "@supabase/supabase-js";
 
 interface Consultant {
   id: string; 
@@ -27,17 +29,14 @@ const ConsultantDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUserId(user?.id || null);
-    };
-    fetchUser();
-  }, []);
-
-  useEffect(() => {
+    // Reliably get the current user's session
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+        setCurrentUser(session?.user || null);
+    });
+    
     const fetchConsultant = async () => {
       setLoading(true);
       const { data, error } = await supabase
@@ -50,7 +49,6 @@ const ConsultantDetails = () => {
         setError("Consultant not found or an error occurred.");
       } else {
         setConsultant(data);
-        setError("");
       }
       setLoading(false);
     };
@@ -61,16 +59,14 @@ const ConsultantDetails = () => {
       setError("Invalid consultant ID provided.");
       setLoading(false);
     }
+    
+    return () => {
+        authListener.subscription.unsubscribe();
+    };
   }, [id]);
 
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  }
-
-  if (error) {
-    return <div className="flex items-center justify-center min-h-screen text-destructive">{error}</div>;
-  }
-
+  if (loading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  if (error) return <div className="flex items-center justify-center min-h-screen text-destructive">{error}</div>;
   if (!consultant) return null;
 
   return (
@@ -127,7 +123,6 @@ const ConsultantDetails = () => {
             ⭐ {consultant.rating} rating from {consultant.total_reviews} reviews
           </div>
 
-          {/* FIX: Restored the missing rates section here */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-6 text-foreground border-t border-border pt-6">
             <div className="text-center p-2 rounded-md bg-background">
               <p className="text-muted-foreground">Text Rate</p>
@@ -143,17 +138,23 @@ const ConsultantDetails = () => {
             </div>
           </div>
 
-          <button
+          <Button
             onClick={() => setShowModal(true)}
-            disabled={!currentUserId}
-            className="w-full md:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-8 py-3 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!currentUser}
+            className="w-full md:w-auto"
           >
             Book a Session
-          </button>
+          </Button>
         </motion.div>
 
-        {showModal && consultant && currentUserId && (
-          <BookingModal consultant={consultant} userId={currentUserId} onClose={() => setShowModal(false)} />
+        {/* The modal is now always rendered, but its visibility is controlled by the isOpen prop */}
+        {currentUser && (
+            <BookingModal
+                isOpen={showModal}
+                consultant={consultant}
+                userId={currentUser.id}
+                onClose={() => setShowModal(false)}
+            />
         )}
       </div>
     </div>

@@ -1,11 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { Fragment } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../lib/supabaseClient";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
+import toast from 'react-hot-toast';
 
 interface Consultant {
   id: string;
+  user_id: string; // Important for correct booking
   full_name: string;
   text_rate: number;
   voice_rate: number;
@@ -13,6 +17,7 @@ interface Consultant {
 }
 
 interface BookingModalProps {
+  isOpen: boolean; // Add this prop to control visibility
   consultant: Consultant;
   userId: string;
   onClose: () => void;
@@ -21,6 +26,7 @@ interface BookingModalProps {
 const consultationTypes = ["Text", "Voice", "Video"];
 
 const BookingModal: React.FC<BookingModalProps> = ({
+  isOpen, // Use this prop
   consultant,
   userId,
   onClose,
@@ -35,17 +41,10 @@ const BookingModal: React.FC<BookingModalProps> = ({
   const getRatePerMinute = () => {
     let baseRate = 0;
     switch (consultationType) {
-      case "Voice":
-        baseRate = consultant.voice_rate;
-        break;
-      case "Video":
-        baseRate = consultant.video_rate;
-        break;
-      default:
-        baseRate = consultant.text_rate;
-        break;
+      case "Voice": baseRate = consultant.voice_rate; break;
+      case "Video": baseRate = consultant.video_rate; break;
+      default: baseRate = consultant.text_rate; break;
     }
-    // Return the rate with 20% commission added
     return baseRate * 1.20;
   };
 
@@ -54,16 +53,14 @@ const BookingModal: React.FC<BookingModalProps> = ({
 
   const handleSubmit = async () => {
     if (!dateTime) {
-      alert("Please select a date and time.");
+      toast.error("Please select a date and time.");
       return;
     }
-
     setIsSubmitting(true);
-
     const { error } = await supabase.from("bookings").insert([
       {
         user_id: userId,
-        consultant_id: consultant.id,
+        consultant_id: consultant.user_id,
         consultation_type: consultationType,
         scheduled_at: dateTime,
         rate_per_minute: ratePerMinute,
@@ -73,14 +70,11 @@ const BookingModal: React.FC<BookingModalProps> = ({
         notes,
       },
     ]);
-
     setIsSubmitting(false);
-
     if (error) {
-      console.error("Booking Error:", error);
-      alert("Failed to book. Please try again.");
+      toast.error("Failed to book. Please try again.");
     } else {
-      setConfirmationMessage("✅ Booking successful! We’ll notify you soon.");
+      setConfirmationMessage("✅ Booking successful!");
       setTimeout(() => {
         setConfirmationMessage("");
         onClose();
@@ -89,7 +83,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
   };
 
   return (
-    <Transition show={true} as={Fragment}>
+    <Transition show={isOpen} as={Fragment}>
       <Dialog onClose={onClose} className="relative z-50">
         <Transition.Child
           as={Fragment}
@@ -114,98 +108,38 @@ const BookingModal: React.FC<BookingModalProps> = ({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-90"
             >
-              <Dialog.Panel className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-gray-900">
-                <Dialog.Title className="text-xl font-bold text-center text-gray-800 dark:text-white mb-4">
+              <Dialog.Panel className="w-full max-w-md rounded-lg bg-card p-6 shadow-xl">
+                <Dialog.Title className="text-xl font-bold text-center text-foreground mb-4">
                   Book with {consultant.full_name}
                 </Dialog.Title>
-
                 {confirmationMessage ? (
-                  <p className="text-green-600 font-medium text-center">
-                    {confirmationMessage}
-                  </p>
+                  <p className="text-green-600 font-medium text-center py-8">{confirmationMessage}</p>
                 ) : (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
-                    className="space-y-4"
-                  >
-                    {/* Consultation Type */}
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Consultation Type
-                      </label>
-                      <select
-                        value={consultationType}
-                        onChange={(e) => setConsultationType(e.target.value)}
-                        className="w-full rounded-md border px-3 py-2 dark:bg-gray-800 dark:text-white dark:border-gray-600"
-                      >
-                        {consultationTypes.map((type) => (
-                          <option key={type} value={type}>
-                            {type}
-                          </option>
-                        ))}
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">Consultation Type</label>
+                      <select value={consultationType} onChange={(e) => setConsultationType(e.target.value)} className="input w-full">
+                        {consultationTypes.map((type) => (<option key={type} value={type}>{type}</option>))}
                       </select>
                     </div>
-
-                    {/* Date & Time */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Schedule Date & Time
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={dateTime}
-                        onChange={(e) => setDateTime(e.target.value)}
-                        className="w-full rounded-md border px-3 py-2 dark:bg-gray-800 dark:text-white dark:border-gray-600"
-                      />
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">Schedule Date & Time</label>
+                      <Input type="datetime-local" value={dateTime} onChange={(e) => setDateTime(e.target.value)} />
                     </div>
-
-                    {/* Duration */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Duration (Minutes)
-                      </label>
-                      <input
-                        type="number"
-                        value={durationMinutes}
-                        onChange={(e) =>
-                          setDurationMinutes(parseInt(e.target.value, 10))
-                        }
-                        min={1}
-                        className="w-full rounded-md border px-3 py-2 dark:bg-gray-800 dark:text-white dark:border-gray-600"
-                      />
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">Duration (Minutes)</label>
+                      <Input type="number" value={durationMinutes} onChange={(e) => setDurationMinutes(parseInt(e.target.value, 10))} min={1}/>
                     </div>
-
-                    {/* Notes */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Additional Notes
-                      </label>
-                      <textarea
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        rows={3}
-                        className="w-full rounded-md border px-3 py-2 dark:bg-gray-800 dark:text-white dark:border-gray-600"
-                        placeholder="e.g., Specific topics to discuss"
-                      />
+                      <label className="block text-sm font-medium text-muted-foreground mb-1">Additional Notes</label>
+                      <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="e.g., Specific topics to discuss" />
                     </div>
-
-                    {/* Pricing Summary */}
-                    <div className="text-sm text-gray-700 dark:text-gray-400">
-                      Rate: ₹{ratePerMinute.toFixed(2)}/min × {durationMinutes} min ={" "}
-                      <strong>Total: ₹{totalAmount.toFixed(2)}</strong>
+                    <div className="text-sm text-foreground bg-secondary/30 p-3 rounded-md text-center">
+                      Rate: <span className="font-semibold">₹{ratePerMinute.toFixed(2)}/min</span> × {durationMinutes} min ={" "}
+                      <strong className="text-lg">Total: ₹{totalAmount.toFixed(2)}</strong>
                     </div>
-
-                    {/* Submit Button */}
                     <div className="flex justify-end pt-2">
-                      <button
-                        onClick={handleSubmit}
-                        disabled={isSubmitting}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-5 rounded-md transition disabled:opacity-50"
-                      >
-                        {isSubmitting ? "Booking..." : "Book Now"}
-                      </button>
+                      <Button onClick={handleSubmit} disabled={isSubmitting}>{isSubmitting ? "Booking..." : "Book Now"}</Button>
                     </div>
                   </motion.div>
                 )}
